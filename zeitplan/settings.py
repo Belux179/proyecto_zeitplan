@@ -90,16 +90,34 @@ WSGI_APPLICATION = 'zeitplan.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/3.2/ref/settings/#databases
 
+import os
+try:
+    engine = os.environ['DB_ENGINE']
+    name = os.environ['DB_NAME']
+    user = os.environ['DB_USER']
+    password = os.environ['DB_PASSWORD']
+    host = os.environ['DB_HOST']
+    port = os.environ['DB_PORT']
+except KeyError:
+    engine = 'django.db.backends.sqlite3'
+    name = os.path.join(BASE_DIR, 'db.sqlite3')
+    user = ''
+    password = ''
+    host = ''
+    port = ''
+
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'zeitplan',
-        'USER': 'admin',
-        'PASSWORD': '1234',
-        'HOST': 'db',
-        'PORT': 3306,
+        'ENGINE': engine,
+        'NAME': name,
+        'USER': user,
+        'PASSWORD': password,
+        'HOST': host,
+        'PORT': port,
+        
     }
 }
+
 
 """DATABASES = {
     'default': {
