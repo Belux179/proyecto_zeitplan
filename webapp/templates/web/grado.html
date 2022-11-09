@@ -1,0 +1,13 @@
+{% extends "base/aplicacion.html" %}
+
+{% block title %}Grados{% endblock title %}
+{%block title_body%}<h2>Grados y Materias</h2>{%endblock title_body%}
+{%block body%}
+    {%include "macro/table_grado.html"%}
+    {%include "macro/table_materia.html"%}
+{%endblock body%}
+{% block javascript %}
+    {% with 'grados materias' as list_tables %}
+        {% include 'macro/scripts_tables.html' with list_tables=list_tables.split %}
+    {% endwith %}
+{% endblock javascript %}

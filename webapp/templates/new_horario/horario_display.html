@@ -1,0 +1,205 @@
+{% extends 'base/aplicacion_horario.html' %}
+{% load static %}
+
+{% block title %}
+    {{horario.nombre}}
+{% endblock %}
+{% block boton_seiderbar %}
+    <button id='home'  class="btn btn-info mb-2 " style="background-color: #0893b5; border: none; border-radius: 30px; padding: 10px 20px; font-size: 15px; font-weight: bold;">
+        <i class="fas fa-arrow-left"></i>
+        <span>Home</span>
+    </button>
+    <!--
+    <button type="button" class="btn btn-info mb-2" href="#"  style="background-color: #07748f; border: none; border-radius: 30px; padding: 10px 20px; font-size: 15px; font-weight: bold;">
+        <i class="fas fa-user-graduate"></i>
+        <span>Profesores</span>
+    </button>
+    <button type="button" class="btn btn-info mb-2" href="#" style="background-color: #07748f; border: none; border-radius: 30px; padding: 10px 20px; font-size: 15px; font-weight: bold;">
+        <i class="fas fa-graduation-cap"></i>
+        <span>Grados</span>
+    </button>
+    <button type="button" class="btn btn-info mb-2" href="#"  style="background-color: #07748f; border: none; border-radius: 30px; padding: 10px 20px; font-size: 15px; font-weight: bold;">
+        <i class="fas fa-book"></i>
+        <span>Asignaciones</span>
+    </button>
+    <!---->
+{% endblock boton_seiderbar %}
+{% block boton_seiderbar_iz %}
+    <button id='button_generate' class="mb-2" style="background-color: #F2F2F2; color: #000000; border: none;  padding: 10px 20px; font-size: 20px; font-weight: bold;">
+        <span>Generar</span>
+    </button>
+{% endblock boton_seiderbar_iz %}
+
+{% block title_body %}
+  <h2>Horario {{horario.nombre}}</h2>
+{% endblock title_body %}
+
+{% block body %}
+    <!-- usar flexbox para mostrar los elementos en una sola fila -->
+    <div class="container " >
+        <!-- mostrar los grados -->
+        <div class="grados">
+            <h3>Grados</h3>
+            <!-- select y un buton para mostrar -->
+            <select name="grados" id="grados">
+                <option value="0">Seleccione un grado</option>
+                {% for grado in grados %}
+                    <option value="{{grado.id}}">{{grado.nombre}}</option>
+                {% endfor %}
+            </select>
+            <button id="btn_grado" class="btn btn-primary">
+                Mostrar
+            </button>
+            <button id="btn_pdf" class="btn btn-primary ">
+                PDF
+            </button>
+            
+        </div>
+    </div>
+    <div id='container_pdf'>
+        <div class="title container" id='title_hor'>
+            <h3>{{nombre_grado}}</h3> 
+        </div>
+        <div class="cont_hor text-center">
+            <div class="container">
+                <div class="contenedor-hor contai">
+        
+                </div>
+            </div>
+        </div>
+    </div>
+
+{% endblock body %}
+
+{% block javascript %}
+    <script type="text/javascript">
+        // creacion de un PDF 
+        const $boton = document.querySelector('#btn_pdf');
+        $boton.addEventListener('click', () => {
+            const $container = document.querySelector('#container_pdf');
+            const $name = document.querySelector('#title_hor');
+            html2pdf()
+                .set({
+                    margin: 1,
+                    filename: $name.textContent + '.pdf',
+                    image: {
+                        type: 'jpeg',
+                        quality: 0.98
+                    },
+                    html2canvas: {
+                        scale: 3,
+                        letterRendering: true,
+                    },
+                    jsPDF: {
+                        unit: 'cm',
+                        format: 'A4',
+                        orientation: 'landscape'
+                    }
+                })
+                .from($container)
+                .save()
+                .catch(err => console.log(err));
+        });
+        
+        
+        $('#button_generate').click(function(){
+            console.log('click');
+            $.ajax({
+                url: "/modif/{{id_horario}}/",
+                type: "POST",
+                data: {
+                    'csrfmiddlewaretoken': '{{ csrf_token }}',
+                    'no_page_actual': 10,
+                    'id_horario': '{{id_horario}}',
+                },
+                success: function (data) {
+                    if(data.status == 'ok'){
+                        location.reload();
+                    }
+                },
+                error: function (data) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Oops...',
+                        text: 'Se genero error al generar el horario, porfavor configure los datos del horario y vuelva a intentarlo',
+                    })
+                }
+            });
+
+        });
+        //obtener el id del horario
+        $('#btn_grado').click(function(){
+            //obtener el id del grado
+            var id_grado = $('#grados').val();
+            obtenerHorario(id_grado);
+        });
+        var id_horario = {{horario.id}};
+        // variable que contenga los horarios
+        var horarios = {} 
+        function obtenerHorario(id_grado){
+            $.ajax({
+                url: "{% url 'display_horario_ajax' %}",
+                type: "POST",
+                data: {
+                    csrfmiddlewaretoken: '{{ csrf_token }}',
+                    id_horario: {{id_horario}},
+                    id_grado: id_grado,
+                    type: 'horarios'
+                },
+                success: function(response){
+                    horarios = mostrar_horario(response.horarios);
+                    $('#title_hor').html('<h3>'+response.grado_nombre+'</h3>');
+                },
+                error: function(error){
+                    console.log(error);
+                }
+            });
+        }
+
+        function mostrar_horario(datos){
+            //vaciar el contenedor
+            $('.contenedor-hor').empty();
+            // recorrer datos y crear los elementos html, si no exite un dia no se crea y el primero card es el dia
+            console.log(datos);
+            for (var dia in datos) {
+                // crear el card del dia
+                var card = document.createElement("div");
+                card.className = "card";
+                // crear el card header del dia
+                var card_header = document.createElement("div");
+                card_header.className = "card-header";
+                card_header.innerHTML = '<h4>'+dia+'</h4>';
+                // crear el card body del dia
+                var card_body = document.createElement("div");
+                card_body.className = "card-body";
+                // recorrer los datos del dia
+                for (var i = 0; i < datos[dia].length; i++) {
+                    // crear el card del horario
+                    var card_horario = document.createElement("div");
+                    card_horario.className = "card card-horario";
+                    // crear el card header del horario
+                    var card_horario_header = document.createElement("div");
+                    card_horario_header.className = "card-header texto_heade";
+                    card_horario_header.innerHTML = '<p>'+datos[dia][i].hora_inicio + " - " + datos[dia][i].hora_fin+'</p>';
+                    // crear el card body del horario
+                    var card_horario_body = document.createElement("div");
+                    card_horario_body.className = "card-body textos";
+                    card_horario_body.innerHTML = '<p>'+datos[dia][i].hora_inicio + " - " + datos[dia][i].hora_fin+'</p>'+'<h6>'+ datos[dia][i].materia + "<h6><p>" + datos[dia][i].profesor +'</p>';
+                    // agregar el card header y body al card del horario
+                    card_horario.appendChild(card_horario_body);
+                    // agregar el card del horario al card body del dia
+                    card_body.appendChild(card_horario);
+                }
+                // agregar el card header y body al card del dia
+                card.appendChild(card_header);
+                card.appendChild(card_body);
+                // agregar el card del dia al contenedor
+                $(".contenedor-hor").append(card);
+            }
+        }
+        obtenerHorario({{id_grado}});
+        $('#home').click(function(){
+            window.location.href = "{% url 'home' %}";
+        });
+    </script>
+{% endblock %}

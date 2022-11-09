@@ -1,0 +1,400 @@
+{% extends "base/aplicacion.html" %}
+
+{% block title %} Horario Nuevo{% endblock title %}
+{% block title_body %} <h2>Añadir Profesores para el Horario</h2>{%endblock title_body%}
+{% block body %}
+
+{% load static %}
+<div class="" style="margin-top: 20px;">
+    <div class="card">
+        <div class="card-header">
+            <div class="row">
+                <div class="col-md-6">
+                    <h4 class="card-title">Lista de profesores</h4>
+                </div>
+                <div class="col-md-6">
+                    <div class="btn-group float-right">
+                        <button onclick="add_profesor()" type="button" class="btn btn-primary btn-round" data-toggle="modal" data-target="#modalProfesor">
+                            <i class="fa fa-plus"></i> Nuevo
+                        </button>
+                        <!-- agregue mas botones -->
+                    </div>
+                </div>
+            </div>             
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table id="tabla_profesores" class="table tabla_profesores table-bordered table-hover nowrap" style="width:100%">
+                    <thead class=" text-primary">
+                        <th>
+                            ID
+                        </th>
+                        <th>
+                            Profesores
+                        </th>
+                        <th>
+                            Alias
+                        </th>
+                        <th>
+                            A&ntilde;adir
+                        </th>
+                        <th>
+                            Acciones
+                        </th>
+                    </thead>
+                    <tbody>
+                        
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+<br>
+<div class="row">
+    <div class="col-md-12">
+        <div class="btn-group float-right">
+            <button id="button_next" type="button" class="btn btn-primary btn-round" data-toggle="modal" data-target="#modalProfesor">
+                SIGUIENTE .<i class="fa fa-arrow-right"></i>
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock body %}
+
+{%block javascript%}
+<script type="text/javascript">
+    $('#button_next').click(function(){
+        $.ajax({
+            url: "/modif/{{id_horario}}/",
+            type: "POST",
+            data: {
+                'csrfmiddlewaretoken': '{{ csrf_token }}',
+                'no_page_actual': 2,
+                'id_horario': '{{id_horario}}',
+            },
+            success: function (data) {
+                window.location.href = "/select_grado/{{id_horario}}/";
+            },
+            error: function (data) {
+                console.log('Error:', data);
+            }
+        });
+    });
+    try {
+        $(document).ready(function() {
+            $('#tabla_profesores').DataTable({
+                "processing": true,
+                "responsive": true,
+                "language": {
+                    {% load static %}
+                    "url": "{% static 'json/table_es.json' %}"
+                },
+                ajax: {
+                    url: '{% url 'select_profesores_ajax' %}',
+                    type: 'POST',
+                    dataSrc: '',
+                    data: {
+                        'csrfmiddlewaretoken': '{{ csrf_token }}',
+                        'id_horario': {{id_horario}},
+                    }
+                },
+                columns: [
+                    {data: 'id'},
+                    {data: 'nombre'},
+                    {data: 'alias'},
+                    {data: 'activo'},
+                    {data: 'id_profesor'}
+                ],
+                columnDefs: [{
+                    targets: [-1],
+                    class: 'text-center',
+                    orderable: false,
+                    render: function(data, type, row) {      
+                        return ''+
+                        '<a onclick="modal_condiciones('+row.id+',\''+row.nombre+'\')" class="btn btn-sm btn-primary mr-1" data-toggle="tooltip" data-placement="top" title="Condiciones"><i class="fas fa-book mr-1"></i>Condiciones</a>'+   
+                        '<a onclick="update_profesor('+data+')" class="btn btn-primary btn-sm m-1"><i class="fas fa-edit"></i></a>';
+                    }
+                }, {
+                    targets: [-2],
+                    class: 'text-center',
+                    render: function(data, type, row) {
+                        if (data == true) {
+                            return '<span class="badge badge-success">Activo</span> <a onclick="change_status_profesor(' + row.id + ')" class="btn btn-success btn-sm"><i class="fa fa-check" ></i></a>';
+                        } else {
+                            return '<span class="badge badge-danger">Inactivo</span><a onclick="change_status_profesor(' + row.id + ')" class="btn btn-danger btn-sm ml-1"><i class="fa fa-times" ></i></a>';
+                        }
+                    }
+                }]
+            });
+        });// */
+        
+    } catch (error) {
+        console.log('error');
+        console.log(error);
+    }
+    /*
+    funcion para mostrar las condiciones del profesor de acuerdo con Swal.
+    con el cual buscque los datos por medio de ajax siendo una funcion asyncronica
+    modal_condiciones(id)
+    */
+    //async
+    async function modal_condiciones(id, nombre, form_html='',){
+        try{
+            
+            if(form_html===''){
+                await $.ajax({
+                    url: '{% url 'select_profesores_ajax' %}',
+                    type: 'POST',
+                    data: {
+                        'csrfmiddlewaretoken': '{{ csrf_token }}',
+                        'id': id,
+                        'id_horario': {{id_horario}},
+                        'type': 'condiciones',
+                    },
+                    success: function(data) {
+                        form_html =''+
+                        '<div class="form-group">'+
+                            '<label for="cantidad_max_periodos">Cantidad Maxima de Periodos</label>'+
+                            data.cantidad_max_periodos+
+                        '</div>'+
+                        // dias de trabajo Lunes [] Martes [] Miercoles [] Jueves [] Viernes [] Sabado [] Domingo []
+                        '<div class="form-group row">'+
+                            '<div class="col-md-12">'+
+                                '<label for="dias_trabajo">Dias</label>'+
+                            '</div>'+
+                            '<div class="col-md-12">'+
+                                '<div class="form-check form-check-inline">'+
+                                    data.Lunes+'<label class="form-check-label" for="Lunes">Lunes</label>'+
+                                '</div>'+
+                                '<div class="form-check form-check-inline">'+
+                                    data.Martes+'<label class="form-check-label" for="Martes">Martes</label>'+
+                                '</div>'+
+                                '<div class="form-check form-check-inline">'+
+                                    data.Miercoles+'<label class="form-check-label" for="Miercoles">Miercoles</label>'+
+                                '</div>'+
+                                '<div class="form-check form-check-inline">'+
+                                    data.Jueves+ '<label class="form-check-label" for="Jueves">Jueves</label>'+
+                                '</div>'+
+                                '<div class="form-check form-check-inline">'+
+                                    data.Viernes+'<label class="form-check-label" for="Viernes">Viernes</label>'+
+                                '</div>'+
+                                '<div class="form-check form-check-inline">'+
+                                    data.Sabado+ '<label class="form-check-label" for="Sabado">Sabado</label>'+
+                                '</div>'+
+                                '<div class="form-check form-check-inline">'+
+                                    data.Domingo+'<label class="form-check-label" for="Domingo">Domingo</label>'+
+                                '</div>'+
+                            '</div>'+
+                        '</div>'+
+                        // anotaciones
+                        '<div class="form-group row">'+
+                            '<div class="col-md-12">'+
+                                '<label for="anotaciones">Anotaciones</label>'+
+                                data.anotaciones+
+                            '</div>'+
+                        '</div>';
+                    }
+                });
+            }
+            Swal.fire({
+                title:'Condiciones del profesor '+nombre,
+                html:   '<form id="form_add_grado" method="POST">'+
+                            '{% csrf_token %}'+
+                            '<input type="hidden" name="id" value="'+id+'" id="id_condicion">'+
+                            form_html +               
+                        '</form>',
+                showCancelButton: true,
+                confirmButton: 'Guardar',
+                cancelButtonText: 'Cancelar',
+                showLoaderOnConfirm: true,
+                preConfirm: () => {
+                    //validar que los campos del id cantidad_max_periodo_horario_form_horario no esten vacios
+                    
+                    const cantidad_max_periodos = document.getElementById('cantidad_max_periodo_horario_form_horario').value;
+                    const anotaciones = document.getElementById('anotaciones_horario_form_horario').value;
+                    const Lunes = document.getElementById('Lunes_horario_form_horario').checked;
+                    const Martes = document.getElementById('Martes_horario_form_horario').checked;
+                    const Miercoles = document.getElementById('Miercoles_horario_form_horario').checked;
+                    const Jueves = document.getElementById('Jueves_horario_form_horario').checked;
+                    const Viernes = document.getElementById('Viernes_horario_form_horario').checked;
+                    const Sabado = document.getElementById('Sabado_horario_form_horario').checked;
+                    const Domingo = document.getElementById('Domingo_horario_form_horario').checked;
+                    if (Lunes == false && Martes == false && Miercoles == false && Jueves == false && Viernes == false && Sabado == false && Domingo == false) {
+                        Swal.showValidationMessage('Por favor seleccione al menos un dia')
+                    }
+                    return {'cantidad_max_periodos': cantidad_max_periodos, 'anotaciones': anotaciones, 'Lunes': Lunes, 'Martes': Martes, 'Miercoles': Miercoles, 'Jueves': Jueves, 'Viernes': Viernes, 'Sabado': Sabado, 'Domingo': Domingo}
+                },
+            }).then((result) =>{
+                $.ajax({
+                    url: '{% url 'select_profesores_ajax' %}',
+                    type: 'POST',
+                    data: {
+                        'csrfmiddlewaretoken': '{{ csrf_token }}',
+                        'id': id,
+                        'id_horario': {{id_horario}},
+                        'cantidad_max_periodo': result.value.cantidad_max_periodos,
+                        'anotaciones': result.value.anotaciones,
+                        'Lunes': result.value.Lunes,
+                        'Martes': result.value.Martes,
+                        'Miercoles': result.value.Miercoles,
+                        'Jueves': result.value.Jueves,
+                        'Viernes': result.value.Viernes,
+                        'Sabado': result.value.Sabado,
+                        'Domingo': result.value.Domingo,
+                        'type': 'condiciones_save',
+                    },
+                    success: function(data) {
+                        if(data.status == 'ok'){
+                            Swal.fire({
+                                title: 'Condiciones del profesor '+nombre+' guardadas',
+                                icon: 'success',
+                                confirmButtonText: 'Aceptar',
+                            }).then((result) => {
+                                location.reload();
+                            })
+                        }else{
+                            Swal.fire({
+                                title: 'Error al guardar las condiciones del profesor '+nombre,
+                                icon: 'error',
+                                confirmButtonText: 'Aceptar',
+                            })
+                        }
+                    }
+                });
+            });
+
+        }catch(error){
+            console.log(error);
+        }
+    }     
+    
+    function change_status_profesor(id) {
+        $.ajax({
+            url: '{% url 'select_profesores_ajax' %}',
+            type: 'POST',
+            data: {
+                'csrfmiddlewaretoken': '{{ csrf_token }}',
+                'id': id,
+                'type': 'change_status'
+            },
+            success: function(data) {
+                $('#tabla_profesores').DataTable().ajax.reload();
+            },
+            error: function(data) {
+                console.log(data);
+            }
+        });
+    }
+    function update_profesor(id, form_html='') {
+        $.ajax({
+            url: '{% url 'profesores_ajax' %}',
+            type: 'POST',
+            data: {
+                'csrfmiddlewaretoken': '{{ csrf_token }}',
+                'id': id,
+                'type': 'form_update_data_profesor'
+            },
+            success: function(data) {
+                form_html = form_html || data.form;
+                Swal.fire({
+                    title: 'Actualizar profesor ' + data.nombre,
+                    html:   '<form id="form_add_profesor" method="POST">'+
+                                '{% csrf_token %}'+
+                                '<input type="hidden" name="id" value="'+id+'">'+
+                                form_html +               
+                            '</form>', //*/
+                    showCancelButton: true,
+                    confirmButtonText: 'Actualizar',
+                    cancelButtonText: 'Cancelar',
+                    showLoaderOnConfirm: true,
+                    preConfirm: () => {
+                        const nombre = Swal.getPopup().querySelector('#nombre_profesor_form_profesor').value
+                        const alias = Swal.getPopup().querySelector('#alias_profesor_form_profesor').value
+                        if (!nombre) {
+                            Swal.showValidationMessage(`Por favor ingrese el nombre`)
+                        }
+                        return { nombre: nombre, alias: alias }
+                    },
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $.ajax({
+                            url: '{% url 'profesores_ajax' %}',
+                            type: 'POST',
+                            data: {
+                                'csrfmiddlewaretoken': '{{ csrf_token }}',
+                                'type': 'update_profesor',
+                                'id': id,
+                                'nombre': result.value.nombre,
+                                'alias': result.value.alias,
+                            },
+                            success: function(data) {
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Profesor actualizado',
+                                    timer: 1500
+                                });
+                                $('#tabla_profesores').DataTable().ajax.reload();
+                            },
+                            error: function(data) {
+                                update_profesor(id, data.responseJSON.form);
+                            }
+                        });
+                    }
+                })
+            },
+            error: function(data) {
+                console.log(data);
+            }
+        });
+        
+    }
+    function add_profesor(form_html='') {
+        form_html = form_html || '{{ form_add_profesor|escapejs }}';
+        Swal.fire({
+            title: 'Agregar profesor',
+            html:   '<form id="form_add_profesor" method="POST">'+
+                        '{% csrf_token %}'+
+                        form_html +               
+                    '</form>', //*/
+            showCancelButton: true,
+            confirmButtonText: 'Agregar',
+            cancelButtonText: 'Cancelar',
+            showLoaderOnConfirm: true,
+            preConfirm: () => {
+                const nombre = Swal.getPopup().querySelector('#nombre_profesor_form_profesor').value
+                const alias = Swal.getPopup().querySelector('#alias_profesor_form_profesor').value
+                if (!nombre) {
+                    Swal.showValidationMessage(`Por favor ingrese el nombre`)
+                }
+                return { nombre: nombre, alias: alias }
+            },
+            allowOutsideClick: () => !Swal.isLoading()
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $.ajax({
+                    url: '{% url 'profesores_ajax' %}',
+                    type: 'POST',
+                    data: {
+                        'csrfmiddlewaretoken': '{{ csrf_token }}',
+                        'type': 'add_profesor',
+                        'nombre': result.value.nombre,
+                        'alias': result.value.alias,
+                    },
+                    success: function(data) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Profesor agregado',
+                            timer: 1500
+                        });
+                        $('#tabla_profesores').DataTable().ajax.reload();
+                    },
+                    error: function(data) {
+                        add_profesor(data.responseJSON.form);
+                    }
+                });
+            }
+        })
+    }
+</script>
+{%endblock javascript%}

@@ -1,0 +1,348 @@
+{% extends "base/aplicacion.html" %}
+
+{% block title %} Horario Nuevo{% endblock title %}
+{% block title_body %} <h2>Asignaciones para el Horario</h2>{%endblock title_body%}
+
+{% block body %}
+<div class="" style="margin-top: 20px;">
+    <div class="card">
+        <div class="card-header">
+            <div class="row">
+                <div class="col-md-6">
+                    <h4 class="card-title">Lista de Grados Agregados</h4>
+                </div>
+                <div class="col-md-6">
+                    <div class="btn-group float-right">
+                    <!-- agregue mas botones -->
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive" style=" max-height: 300px; ">
+                <table id="tabla_asignaciones" class="table table-bordered table-hover nowrap" 
+                style="width:100%; ">
+                    <thead class="text-primary">
+                        <th hidden>Id</th>
+                        <th>Grado</th>
+                        <th>Materia</th>
+                        <th>Seleccion de profesor</th>
+                        <th>Asignar</th>
+                    </thead>
+                    <tbody style="overflow: auto;">
+                        {% for materia in materias %}                        
+                            <tr>
+                                <td hidden>0</td>
+                                <td>{{ materia.materia.grado }}</td>
+                                <td>{{ materia.materia.nombre }}</td>
+                                <td>
+                                    <select class="form-control" id="profesor_as_{{ materia.id }}">
+                                        <option value="0">Seleccione un profesor</option>
+                                        {% for profesor in profesores %}
+                                        <option value="{{ profesor.id }}">{{ profesor.profesor.nombre }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </td>
+                                <td>
+                                    <button class="btn btn-primary" onclick="asignar({{ materia.id }})">
+                                        Asignar
+                                        <a id="status_as_{{materia.id}}" type="button" class="btn btn-danger btn-sm" data-toggle="modal" data-target="#modal_">
+                                            <i class="fas fa-times"></i>
+                                        </a>
+                                    </button>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                       
+                        {% for asignacion in asignaciones %}
+                        <tr>
+                            <td hidden id="id_asignacion_{{ asignacion.id }}">{{ asignacion.id }}</td>
+                            <td>{{asignacion.materia.materia.grado}}</td>
+                            <td>{{asignacion.materia}}</td>
+                            <td>
+                                <select class="form-control" id="profesor_re_{{asignacion.id}}">
+                                    <option value="0">Seleccione un profesor</option>
+                                    {% for profesor in profesores %}
+                                    {% if profesor.id == asignacion.profesor.id %}
+                                    <option value="{{ profesor.id }}" selected>{{ profesor.profesor.nombre }}</option>
+                                    {% else %}
+                                    <option value="{{ profesor.id }}">{{ profesor.profesor.nombre }}</option>
+                                    {% endif %}
+                                    {% endfor %}
+                            </td>
+                            <td>
+                                <button class="btn btn-primary" onclick="reasignar({{asignacion.id}})">
+                                    Reasignar
+                                    <a id="status_re_{{asignacion.id}}" type="button" class="btn btn-success btn-sm " data-toggle="modal" data-target="#modal_asignar">
+                                        <i class="fas fa-check" id="icon_status_{{asignacion.id}}"></i>
+                                    </a>
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row" style="margin-top: 20px;">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h4 class="card-title">Conteno de Asignaciones de Profesores</h4>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="btn-group float-right">
+                        <!-- agregue mas botones -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive" style="max-height: 300px;">
+                    <table id="tabla_profesores" class="table table-bordered table-hover nowrap" style="width:100%">
+                        <thead class="text-primary">
+                            <th>ID</th>
+                            <th>Profesores</th>
+                            <th>Alias</th>
+                            <th>No. Asignaciones</th>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <!-- apartado para un textArea para anotaciones -->
+        <div class="card">
+            <div class="card-header">
+                <div class="col-md-6">
+                    <h4 class="card-title">
+                        <a data-toggle="collapse" data-parent="#accordion" href="#collapseOne">
+                            Anotaciones
+                        </a>
+                    </h4>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- text area {{anotaciones}} -->
+                    <textarea class="form-control" id="anotaciones" rows="3" placeholder="Anotaciones" style="width: 100%; height: 100px;" >{{anotaciones}}</textarea>
+                </div>
+            </div>
+        </div>
+    </div>
+</div> 
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="btn-group float-right">
+            <button id="button_generate" type="button" class="btn btn-primary btn-round" data-toggle="modal" data-target="#modalProfesor">
+                Generar .<i class="fa fa-arrow-right"></i>
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock body %}
+
+{%block javascript%}
+<script type="text/javascript">
+    $('#button_generate').click(function(){
+        console.log('click');
+        $.ajax({
+        url: "/modif/{{id_horario}}/",
+        type: "POST",
+        data: {
+            'csrfmiddlewaretoken': '{{ csrf_token }}',
+            'no_page_actual': 4,
+            'id_horario': '{{id_horario}}',
+        },
+        success: function (data) {
+            if(data.status == 'ok'){
+                console.log(data);
+                window.location.href = "/horario_display/{{id_horario}}/";
+            }
+        },
+        error: function (data) {
+            console.log('Error:', data);
+        }
+    });
+
+    });
+    try {
+        
+        $(document).ready(function() {
+            $('#tabla_asignaciones').DataTable({
+                "processing": true,
+                "responsive": true,
+                'order': [[0, 'asc'], [1, 'asc'], [2, 'asc']],
+                'paging': false,
+                "language": {
+                    {% load static %}
+                    "url": "{% static 'json/table_es.json' %}"
+                },
+                "columnDefs": [
+                    { 
+                        "targets": [1,2,3,4], 
+                        "orderable": false, 
+                    },
+                    {
+                        "targets": [0],
+                        "visible": false,
+                        "searchable": false,
+                    },
+                ]
+    
+            });
+        });// */
+        //ordenar tabla
+        
+        
+    } catch (error) {
+        console.log(error);
+    }
+    try {
+        $(document).ready(function() {
+            $('#tabla_profesores').DataTable({
+                'paging': false,
+                "processing": true,
+                "responsive": true,
+                "language": {
+                    {% load static %}
+                    "url": "{% static 'json/table_es.json' %}"
+                },
+                ajax: {
+                    url: '{% url 'select_asignaturas_ajax' %}',
+                    type: 'POST',
+                    dataSrc: '',
+                    data: {
+                        'csrfmiddlewaretoken': '{{ csrf_token }}',
+                        'id_horario': {{ id_horario }},
+                        'type': 'list_profesores_no_asigna',
+                    }
+                },
+                columns: [
+                    {data: 'id_profesor'},
+                    {data: 'nombre'},
+                    {data: 'alias'},
+                    {data: 'no_asignaciones'},
+                ],
+                "columnDefs": [
+                    { 
+                        "targets": [-1],
+                        //tamaño maximio de la celda
+                        "width": "10%",
+                    },
+                    {
+                        "targets":[0,1,2,3],
+                        //text center
+                        "className": "text-center",
+                    }
+                ]
+    
+            });
+        });// */
+        
+    } catch (error) {
+        console.log(error);
+    }
+    function asignar(id_materia){
+        var id_profesor = $('#profesor_as_'+id_materia).val();
+        if(id_profesor == 0){
+            Swal.fire({ icon: 'error', title: 'Oops...', text: 'Seleccione un profesor', });
+            return;
+        }
+        $.ajax({
+            url: '{% url 'select_asignaturas_ajax' %}',
+            type: 'POST',
+            data: {
+                'csrfmiddlewaretoken': '{{ csrf_token }}',
+                'id_materia': id_materia,
+                'id_profesor': id_profesor,
+                'id_horario': {{ id_horario }},
+                'type': 'asignar',
+            },
+            success: async function(data){
+                if(data.status == 'ok'){
+                    await Swal.fire({ icon: 'success', title: 'Asignación exitosa', text: 'Se ha asignado la materia correctamente',timer: 4000, });
+                    location.reload();
+                }else{
+                    Swal.fire({ icon: 'error', title: 'Oops...', text: 'No se pudo asignar la materia', });
+                }
+            },
+            error: function(data){
+                alert('Error al asignar');
+            }
+        });
+    }
+    function reasignar(id_asignacion){
+        var id_profesor = $('#profesor_re_'+id_asignacion).val();
+        if(id_profesor == 0){
+            Swal.fire({ icon: 'error', title: 'Oops...', text: 'Seleccione un profesor', });
+            return;
+        }
+        $.ajax({
+            url: '{% url 'select_asignaturas_ajax' %}',
+            type: 'POST',
+            data: {
+                'csrfmiddlewaretoken': '{{ csrf_token }}',
+                'id_asignatura': id_asignacion,
+                'id_profesor': id_profesor,
+                'id_horario': {{ id_horario }},
+                'type': 'reasignar'
+            },
+            success: async function(data){
+                if(data.status == 'ok'){
+                    await Swal.fire({ icon: 'success', title: 'Asignación exitosa', text: 'Se ha asignado la materia correctamente',timer: 4000, });
+                    location.reload();
+                }else{
+                    Swal.fire({ icon: 'error', title: 'Oops...', text: 'No se pudo reasignar la materia', });
+                }
+            },
+            error: function(data){
+                alert('Error al reasignar');
+            }
+        });
+    }
+    // usar regex para validar si un profesor_re_ es cambiado si es asi cambiar el icono status_{ y cambiar el valor de id_asignacion_
+    $(document).ready(function(){
+        $('#tabla_asignaciones tbody').on('change', 'select', function(){
+            var id = $(this).attr('id'); 
+            var id_asignacion = id.split('_')[2];
+            var tipo = id.split('_')[1];
+            var id_profesor = $(this).val();
+            if(id_profesor == 0){
+                $('#status_'+tipo+'_'+id_asignacion).removeClass('btn-success');
+                $('#status_'+tipo+'_'+id_asignacion).addClass('btn-danger');
+                $('#status_'+tipo+'_'+id_asignacion).html('<i class="fa fa-times"></i>');
+                return;
+            }else{
+                
+                $('#status_'+tipo+'_'+id_asignacion).removeClass('btn-success');
+                $('#status_'+tipo+'_'+id_asignacion).removeClass('btn-danger');
+                $('#status_'+tipo+'_'+id_asignacion).addClass('btn-primary');
+                $('#status_'+tipo+'_'+id_asignacion).html('<i class="fa fa-arrow-right"></i>');
+                return;
+            }
+
+        });
+    });
+    $('#anotaciones').on('change', function(){
+        var anotaciones = $(this).val();
+        $.ajax({
+            url: '{% url 'select_asignaturas_ajax' %}',
+            type: 'POST',
+            data: {
+                'csrfmiddlewaretoken': '{{ csrf_token }}',
+                'anotaciones': anotaciones,
+                'id_horario': {{ id_horario }},
+                'type': 'anotaciones'
+            },
+        });
+    });
+</script>
+{%endblock javascript%}

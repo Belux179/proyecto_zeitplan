@@ -1,0 +1,78 @@
+.cont_hor{
+    display: flex;
+    padding: 1rem;
+}
+.contenedor-hor{
+    /*Grid*/
+    display: grid;
+    grid-template-columns: repeat(6, 10fr);
+    grid-gap: 0.5rem;
+    grid-auto-flow: dense;
+    grid-auto-rows: minmax(100px, auto);
+    grid-auto-columns: minmax(auto, auto);
+    margin: 0rem;
+    
+}
+/* cuando el ancho de la pantalla sea menor a 1200px */
+@media screen and (max-width: 1200px) {
+    .contenedor-hor{
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+/* cuando el ancho de la pantalla sea menor a 800px */
+@media screen and (max-width: 800px) {
+    .contenedor-hor{
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+/* cuando el ancho de la pantalla sea menor a 500px */
+@media screen and (max-width: 500px) {
+    .contenedor-hor{
+        grid-template-columns: repeat(1, 1fr);
+    }
+}
+
+.card {
+    /*Estilos*/
+    background-color: #fff;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.2);
+    padding: 0;
+    margin: 0;
+    /* Grid */
+    grid-template-columns: repeat(1, 1fr);
+    /* grid-template-rows: repeat(2, 1fr); */
+
+}
+.card .textos{
+    /*text-align: left;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around;
+    /*Estilos*/
+    /* el tamaño de la caja es el mismo que el tamaño del texto */
+    height: 100%;
+    padding: 0.1rem;
+    margin-left: 0.5rem;
+    margin-right: 0.5rem;
+    /* el alto de caja es el mas reducido posible */
+    
+}
+.card .textos h6{
+    /*Estilos*/
+    font-size: 0.8rem;
+    font-weight: 500;
+    margin-left: 1rem;
+    margin-right: 1rem;
+    margin-top: 0rem;
+    margin-bottom: 0rem;
+    padding: 0.2rem;
+}
+.card-horario {
+    background-color: #fff;
+    border-radius: 10px;
+}
+.contai{
+    min-width: 150px;
+}
+

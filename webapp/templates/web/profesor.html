@@ -1,0 +1,14 @@
+{% extends "base/aplicacion.html" %}
+
+{% block title %}Profesores{% endblock title %}
+{%block title_body%}<h2>Profesores</h2>{%endblock title_body%}
+
+{%block body%}
+    {%include "macro/table_profesor.html" with Profesores=Profesores%}
+{%endblock body%}
+
+{% block javascript %}
+    {% with 'profesores grados' as list_tables %}
+        {% include 'macro/scripts_tables.html' with list_tables=list_tables.split %}
+    {% endwith %}
+{% endblock javascript %}

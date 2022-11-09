@@ -1,0 +1,512 @@
+{% extends 'base/aplicacion.html' %}
+
+{% block title %}
+  Horario Nuevo
+{% endblock %}
+{% block title_body %}
+  <h2>A&ntilde;adir Materias para el Horario</h2>
+{% endblock %}
+{% block body %}
+  {% load static %}
+  <div class="" style="margin-top: 20px;">
+    <div class="card">
+      <div class="card-header">
+        <div class="row">
+          <div class="col-md-6">
+            <h4 class="card-title">Lista de Grados Agregados</h4>
+          </div>
+          <div class="col-md-6">
+            <div class="btn-group float-right">
+              <button onclick="add_grado()" type="button" class="btn btn-primary btn-round" data-toggle="modal" data-target="#modalGrado"><i class="fa fa-plus"></i> Nuevo</button>
+              <!-- agregue mas botones -->
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="table-responsive">
+          <table id="tabla_grados" class="table table-bordered table-hover nowrap" style="width:100%">
+            <thead class="text-primary">
+              <th>ID</th>
+              <th>Grado</th>
+              <th>Alias</th>
+              <th>A&ntilde;adir</th>
+              <th>Acciones</th>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="" style="margin-top: 20px;">
+    <div class="card">
+      <div class="card-header">
+        <div class="row">
+          <div class="col-md-6">
+            <h4 class="card-title">Materias de Grados</h4>
+          </div>
+          <div class="col-md-6">
+            <div class="btn-group float-right">
+              <button onclick="add_materia()" type="button" class="btn btn-primary btn-round" data-toggle="modal" data-target="#modalMateria"><i class="fa fa-plus"></i> Nuevo</button>
+              <!-- agregue mas botones -->
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="table-responsive">
+          <table id="tabla_materias" class="table table-bordered table-hover nowrap" style="width:100%">
+            <thead class="text-primary">
+              <th>ID</th>
+              <th>Materias</th>
+              <th>Grado</th>
+              <th>A&ntilde;adir</th>
+              <th>Acciones</th>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+    <div class="row">
+        <div class="col-md-12">
+            <div class="btn-group float-right">
+                <button id="button_next" type="button" class="btn btn-primary btn-round" data-toggle="modal" data-target="#modalProfesor">
+                    SIGUIENTE .<i class="fa fa-arrow-right"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block javascript %}
+<script type="text/javascript">
+$('#button_next').click(function(){
+    $.ajax({
+        url: "/modif/{{id_horario}}/",
+        type: "POST",
+        data: {
+            'csrfmiddlewaretoken': '{{ csrf_token }}',
+            'no_page_actual': 3,
+            'id_horario': '{{id_horario}}',
+        },
+        success: function (data) {
+            if(data.status == 'ok'){
+                console.log(data);
+                window.location.href = "/select_asignatura/{{id_horario}}/";
+            }
+        },
+        error: function (data) {
+            console.log('Error:', data);
+        }
+    });
+});
+try {
+    $(document).ready(function() {
+        $('#tabla_grados').DataTable({
+            "processing": true,
+            "responsive": true,
+            "language": {
+                {% load static %}
+                "url": "{% static 'json/table_es.json' %}"
+            },
+            ajax: {
+                url: '{% url 'select_grados_ajax' %}',
+                type: 'POST',
+                dataSrc: '',
+                data: {
+                    'csrfmiddlewaretoken': '{{ csrf_token }}',
+                    'id_horario': {{ id_horario }}
+                }
+            },
+            columns: [
+                {data: 'id'},
+                {data: 'nombre'},
+                {data: 'alias'},
+                {data: 'activo'},
+                {data: 'id_grado'}
+            ],
+            columnDefs: [{
+                targets: [-1],
+                class: 'text-center',
+                orderable: false,
+                render: function(data, type, row) {
+                    return ''+
+                        '<a onclick="$(\'#tabla_materias\').DataTable().search(\''+row.id+'\').draw();" class="btn btn-sm btn-primary mr-1" data-toggle="tooltip" data-placement="top" title="Materias"><i class="fas fa-book"></i>Materias</a>'+
+                        '<a onclick="add_materia('+data+')" class="btn btn-sm btn-success" data-toggle="tooltip" data-placement="top" title="Agregar materia"><i class="fas fa-plus"></i>Materia</a>'+
+                        '<a onclick="update_grado('+data+')" class="btn btn-primary btn-sm m-1"><i class="fas fa-edit"></i></a>';
+                }
+            }, {
+                targets: [-2],
+                class: 'text-center',
+                render: function(data, type, row) {
+                    if (data == true) {
+                        return '<span class="badge badge-success ">Activo</span> <a onclick="change_status_grado(' + row.id + ')" class="btn btn-success btn-sm"><i class="fa fa-check" ></i></a>';
+                    } else {
+                        return '<span class="badge badge-danger">Inactivo</span><a onclick="change_status_grado(' + row.id + ')" class="btn btn-danger btn-sm ml-1"><i class="fa fa-times" ></i></a>';
+                    }
+                }
+            }]
+
+        });
+    });// */
+    
+} catch (error) {
+    console.log(error);
+}
+function change_status_grado(id) {
+    $.ajax({
+        url: '{% url 'select_grados_ajax' %}',
+        type: 'POST',
+        data: {
+            'csrfmiddlewaretoken': '{{ csrf_token }}',
+            'id': id,
+            'type': 'change_status'
+        },
+        success: function(data) {
+            $('#tabla_grados').DataTable().ajax.reload();
+            $('#tabla_materias').DataTable().ajax.reload();
+        },
+        error: function(data) {
+            console.log(data);
+        }
+    });
+}
+function update_grado(id, form_html='') {
+    $.ajax({
+        url: '{% url 'grados_ajax' %}',
+        type: 'POST',
+        data: {
+            'csrfmiddlewaretoken': '{{ csrf_token }}',
+            'id': id,
+            'type': 'form_update_data_grado'
+        },
+        success: function(data) {
+            form_html = form_html || data.form;
+            Swal.fire({
+                title: 'Actualizar grados ' + data.nombre,
+                html:   '<form id="form_add_grado" method="POST">'+
+                            '{% csrf_token %}'+
+                            '<input type="hidden" name="id" value="'+id+'">'+
+                            form_html +               
+                        '</form>', //*/
+                showCancelButton: true,
+                confirmButtonText: 'Actualizar',
+                cancelButtonText: 'Cancelar',
+                showLoaderOnConfirm: true,
+                preConfirm: () => {
+                    const nombre = Swal.getPopup().querySelector('#nombre_grado_form_grado').value
+                    const alias = Swal.getPopup().querySelector('#alias_grado_form_grado').value
+                    if (!nombre) {
+                        Swal.showValidationMessage(`Por favor ingrese el nombre`)
+                    }
+                    return { nombre: nombre, alias: alias }
+                },
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        url: '{% url 'grados_ajax' %}',
+                        type: 'POST',
+                        data: {
+                            'csrfmiddlewaretoken': '{{ csrf_token }}',
+                            'type': 'update_grado',
+                            'id': id,
+                            'nombre': result.value.nombre,
+                            'alias': result.value.alias,
+                        },
+                        success: function(data) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Grado actualizado',
+                                timer: 1500
+                            });
+                            $('#tabla_grados').DataTable().ajax.reload();
+                        },
+                        error: function(data) {
+                            update_grado(id, data.responseJSON.form);
+                        }
+                    })
+                }
+            });
+        },
+        error: function(data) {
+            console.log(data);
+        }
+    });
+    
+}
+
+function add_grado(form_html='') {
+    form_html = form_html || '{{ form_add_grado|escapejs }}';
+    Swal.fire({
+        title: 'Agregar grado',
+        html:   '<form id="form_add_grado" method="POST">'+
+                    '{% csrf_token %}'+
+                    form_html +               
+                '</form>', //*/
+        showCancelButton: true,
+        confirmButtonText: 'Agregar',
+        cancelButtonText: 'Cancelar',
+        showLoaderOnConfirm: true,
+        preConfirm: () => {
+            const nombre = Swal.getPopup().querySelector('#nombre_grado_form_grado').value
+            const alias = Swal.getPopup().querySelector('#alias_grado_form_grado').value
+            if (!nombre) {
+                Swal.showValidationMessage(`Por favor ingrese el nombre`)
+            }
+            return { nombre: nombre, alias: alias }
+        },
+        allowOutsideClick: () => !Swal.isLoading()
+    }).then((result) => {
+        if (result.isConfirmed) {
+            $.ajax({
+                url: '{% url 'grados_ajax' %}',
+                type: 'POST',
+                data: {
+                    'csrfmiddlewaretoken': '{{ csrf_token }}',
+                    'type': 'add_grado',
+                    'nombre': result.value.nombre,
+                    'alias': result.value.alias,
+                },
+                success: function(data) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Grado agregado',
+                        timer: 1500
+                    });
+                    $('#tabla_grados').DataTable().ajax.reload();
+                    
+                },
+                error: function(data) {
+                    add_grado(data.responseJSON.form);
+                }
+            });
+        }
+    })
+}
+
+try {
+    $(document).ready(function() {
+        $('#tabla_materias').DataTable({
+            "processing": true,
+            "responsive": true,
+            "language": {
+                {% load static %}
+                "url": "{% static 'json/table_es.json' %}"
+            },
+            ajax: {
+                url: '{% url 'select_materias_ajax' %}',
+                type: 'POST',
+                dataSrc: '',
+                data: {
+                    'csrfmiddlewaretoken': '{{ csrf_token }}',
+                    'id_horario': {{ id_horario }}
+                }
+            },
+            columns: [
+                {data: 'id'},
+                {data: 'materia'},
+                {data: 'grado'},
+                {data: 'activo'},
+                {data: 'id_materia'},
+            ],
+            columnDefs: [{
+                targets: [-1],
+                class: 'text-center',
+                orderable: false,
+                render: function(data, type, row) {
+                    
+                    return '<a onclick="update_materia('+data+')" class="btn btn-primary btn-sm m-1"><i class="fas fa-edit"></i></a>';
+                }
+            }, {
+                targets: [-2],
+                class: 'text-center',
+                render: function(data, type, row) {
+                    if (data == true) {
+                        return '<span class="badge badge-success">Activo</span> <a onclick="change_status_materia(' + row.id + ')" class="btn btn-success btn-sm"><i class="fa fa-check" ></i></a>';
+                    } else {
+                        return '<span class="badge badge-danger">Inactivo</span><a onclick="change_status_materia(' + row.id + ')" class="btn btn-danger btn-sm ml-1"><i class="fa fa-times" ></i></a>';
+                    }
+                }
+            }]
+
+        });
+    });// */
+    
+} catch (error) {
+    console.log(error);
+}
+function change_status_materia(id) {
+    $.ajax({
+        url: '{% url 'select_materias_ajax' %}',
+        type: 'POST',
+        data: {
+            'csrfmiddlewaretoken': '{{ csrf_token }}',
+            'id': id,
+            'type': 'change_status'
+        },
+        success: function(data) {
+            $('#tabla_materias').DataTable().ajax.reload();
+        },
+        error: function(data) {
+            console.log(data);
+        }
+    });
+}
+function update_materia(id, form_html='') {
+    $.ajax({
+        url: '{% url 'materias_ajax' %}',
+        type: 'POST',
+        data: {
+            'csrfmiddlewaretoken': '{{ csrf_token }}',
+            'id': id,
+            'type': 'form_update_data_materia'
+        },
+        success: function(data) {
+            form_html = form_html || data.form;
+            Swal.fire({
+                title: 'Actualizar Materia ' + data.nombre,
+                html:   '<form id="form_add_materia" method="POST">'+
+                            '{% csrf_token %}'+
+                            '<input type="hidden" name="id" value="'+id+'">'+
+                            form_html +               
+                        '</form>', //*/
+                showCancelButton: true,
+                confirmButtonText: 'Actualizar',
+                cancelButtonText: 'Cancelar',
+                showLoaderOnConfirm: true,
+                preConfirm: () => {
+                    const nombre = Swal.getPopup().querySelector('#nombre_materia_form_materia').value
+                    const grado = Swal.getPopup().querySelector('#grado_materia_form_materia').value
+                    if (!nombre) {
+                        Swal.showValidationMessage(`Por favor ingrese el nombre`)
+                    }
+                    return { nombre: nombre, grado: grado }
+                },
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        url: '{% url 'materias_ajax' %}',
+                        type: 'POST',
+                        data: {
+                            'csrfmiddlewaretoken': '{{ csrf_token }}',
+                            'type': 'update_materia',
+                            'id': id,
+                            'nombre': result.value.nombre,
+                            'grado': result.value.grado,
+                        },
+                        success: function(data) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Materia actualizado',
+                                timer: 1500
+                            });
+                            $('#tabla_materias').DataTable().ajax.reload();
+                        },
+                        error: function(data) {
+                            update_materia(id, data.responseJSON.form);
+                        }
+                    });
+                }
+            })
+        },
+        error: function(data) {
+            console.log(data);
+        }
+    });
+    
+}
+
+function add_materia(id_grado=0, form_html='') {
+    if (id_grado == 0){
+        //form_html = form_html || '{{ form_add_materia|escapejs }}';
+        if (form_html == ''){ 
+            $.ajax({
+                url: '{% url 'materias_ajax' %}',
+                type: 'POST',
+                data: {
+                    'csrfmiddlewaretoken': '{{ csrf_token }}',
+                    'id_grado': id_grado,
+                    'type': 'form_html',
+                },
+                success: function(data) {
+                    form_html = data.form;
+                    add_materia(id_grado, form_html);
+                },
+                error: function(data) {
+                    console.log(data);
+                }
+            });
+        }
+    }else{
+        $.ajax({
+            url: '{% url 'materias_ajax' %}',
+            type: 'POST',
+            data: {
+                'csrfmiddlewaretoken': '{{ csrf_token }}',
+                'id_grado': id_grado,
+                'type': 'form_add_data_materia'
+            },
+            success: function(data) {
+                form_html = data.form;
+                add_materia(0, form_html);
+            },
+            error: function(data) {
+                console.log(data);
+            }
+        });
+    }
+    Swal.fire({
+        title: 'Agregar Materia',
+        html:   '<form id="form_add_materia" method="POST">'+
+                    '{% csrf_token %}'+
+                    form_html +               
+                '</form>', //*/
+        showCancelButton: true,
+        confirmButtonText: 'Agregar',
+        cancelButtonText: 'Cancelar',
+        showLoaderOnConfirm: true,
+        preConfirm: () => {
+            const nombre = Swal.getPopup().querySelector('#nombre_materia_form_materia').value
+            const grado = Swal.getPopup().querySelector('#grado_materia_form_materia').value
+            if (!nombre) {
+                Swal.showValidationMessage(`Por favor ingrese el nombre`)
+            }
+            if (!grado) {
+                Swal.showValidationMessage(`Por favor ingrese el grado`)
+            }
+            return { nombre: nombre, grado: grado }
+        },
+        allowOutsideClick: () => !Swal.isLoading()
+    }).then((result) => {
+        if (result.isConfirmed) {
+            $.ajax({
+                url: '{% url 'materias_ajax' %}',
+                type: 'POST',
+                data: {
+                    'csrfmiddlewaretoken': '{{ csrf_token }}',
+                    'type': 'add_materia',
+                    'nombre': result.value.nombre,
+                    'grado': result.value.grado,
+                },
+                success: function(data) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Grado agregado',
+                        timer: 1500
+                    });
+                    $('#tabla_materias').DataTable().ajax.reload();
+                },
+                error: function(data) {
+                    add_materia(0, data.responseJSON.form);
+                }
+            });
+        }
+    })
+}
+    
+</script>
+{% endblock %}

@@ -1,0 +1,122 @@
+{% extends "base/aplicacion.html" %}
+
+{% block title %}Horarios{% endblock title %}
+{%block title_body%}<h2>Horarios</h2>{%endblock title_body%}
+{%block body%}
+<!-- datatable de los profesores con los datos id, nombre, alias -->
+<div class="" style="margin-top: 20px;">
+    <div class="card">
+        <div class="card-header">
+            <!-- titulo ' Lista de Horarios' a la izquierda  y un boton de nuevo a la derecha -->
+            <div class="row">
+                <div class="col-md-6">
+                    <h4 class="card-title">Lista de Horarios</h4>
+                </div>
+                <div class="col-md-6">
+                    <a onclick="nwhorario()" class="btn btn-primary btn-round float-right">
+                        <i class="fa fa-plus"></i> Nuevo Horario
+                    </a>
+                </div>
+            </div>  
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table id="tabla_horarios" class="table" style="width:100%">
+                    <thead class=" text-primary">
+                        <th>
+                            ID
+                        </th>
+                        <th>
+                            Nombre
+                        </th>
+                        <th>
+                            Estado
+                        </th>
+                        <th>
+                            Acciones
+                        </th>
+                    </thead>
+                    <tbody>
+                        
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{%endblock body%}
+
+{% block javascript %}
+<script type="application/javascript">
+    try {
+        $(document).ready(function() {
+            $('#tabla_horarios').DataTable({
+                "processing": true,
+                "responsive": true,
+                "language": {
+                    {% load static %}
+                    "url": "{% static 'json/table_es.json' %}"
+                },
+                ajax: {
+                    url: '{% url 'horarios_ajax' %}',
+                    type: 'POST',
+                    dataSrc: '',
+                    data: {
+                        'csrfmiddlewaretoken': '{{ csrf_token }}'
+                    }
+                },
+                columns: [
+                    {data: 'id'},
+                    {data: 'nombre'},
+                    {data: 'no_page'},
+                    {data: 'id'}
+                ],
+                columnDefs: [
+                    {
+                        targets: [-1],
+                        class: 'text-center',
+                        orderable: false,
+                        render: function(data, type, row) {
+                            return '<a href="modif/' + data + '/" class="btn btn-primary btn-sm"><i class="fas fa-edit"></i></a>'+
+                                    '<a onclick="eliminar_horario(' + data + ')" class="btn btn-danger btn-sm"><i class="fas fa-trash"></i></a>';
+                        }
+                    },
+                    {
+                        targets: [-2],
+                        render : function(data, type, row) {
+                            if (row.no_page < 10) {
+                                //retotna un mensaje de estado de ejemplo: "En proceso de creacion"
+                                return '<span class="badge badge-warning">En proceso de creacion</span>';
+                            }
+                            if (row.no_page == 10) {
+                                //retotna un mensaje de estado de ejemplo: "Horario Crado"
+                                return '<span class="badge badge-success">Horario Creado</span>';
+                            }
+                        },
+                    }
+                ]
+    
+            });
+        });// */
+        // */
+    } catch (error) {
+        console.log(error);
+    }
+    function eliminar_horario(id) {
+        $.ajax({
+            url: '{% url 'horarios_ajax' %}',
+            type: 'POST',
+            data: {
+                'csrfmiddlewaretoken': '{{ csrf_token }}',
+                'id_horario': id,
+                'type': 'eliminar_horario'
+            },
+            success: function(data) {
+                //volver a cargar la tabla
+                $('#tabla_horarios').DataTable().ajax.reload();
+            }
+        });
+    }
+
+</script>
+{% endblock javascript %}
