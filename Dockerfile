@@ -15,4 +15,4 @@ ADD . /my_app_dir/.
 
 WORKDIR /my_app_dir
 
-RUN python manage.py runserver
+RUN python manage.py runserver 0.0.0.0
