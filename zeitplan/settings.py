@@ -92,12 +92,12 @@ WSGI_APPLICATION = 'zeitplan.wsgi.application'
 
 import os
 try:
-    engine = os.environ['DB_ENGINE']
-    name = os.environ['DB_NAME']
-    user = os.environ['DB_USER']
-    password = os.environ['DB_PASSWORD']
-    host = os.environ['DB_HOST']
-    port = os.environ['DB_PORT']
+    engine = 'django.db.backends.mysql'
+    name = os.environ['MYSQLDATABASE']
+    user = os.environ['MYSQLUSER']
+    password = os.environ['MYSQLPASSWORD']
+    host = os.environ['MYSQLHOST']
+    port = os.environ['MYSQLPORT']
 except KeyError:
     engine = 'django.db.backends.sqlite3'
     name = os.path.join(BASE_DIR, 'db.sqlite3')
